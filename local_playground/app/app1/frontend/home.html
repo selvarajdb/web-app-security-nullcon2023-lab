@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <script>
+        const SERVER_IP = window.location.hostname;
+        const SERVER_PROTOCOL = window.location.protocol;
+    </script>
+    <script src="common.js"></script>
+    <style>
+        /* Your CSS styles here */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        #header {
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 10px;
+        }
+
+        #content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-box {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+
+        .search-box input[type="text"] {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        .search-box button {
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .search-box button img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .search-results {
+            display: none;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #feedback-form {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #feedback-form label, #feedback-form textarea, #feedback-form button {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        #comments {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>Dashboard</h1>
+        <p>Hello, <span id="username"></span>!</p>
+        <button type="button" onclick="logout()">Logout</button>
+    </div>
+
+    <div id="content">
+        <form id="search-form" class="search-box">
+            <input type="text" id="search-query" name="search-query" placeholder="Search...">
+            <button type="button" id="search-icon" onclick="performSearch()">
+                <img src="search-icon.svg" alt="Search">
+            </button>
+        </form>
+
+        <div id="search-results" class="search-results">
+            <h2>Search Results</h2>
+            <p id="search-result-text"></p>
+        </div>
+
+        <h2>A Simple Calculator</h2>
+
+        <form id="calculator">
+            <label for="expression">Enter a mathematical expression:</label>
+            <input type="text" id="expression" name="expression" placeholder="e.g., 2 + 3">
+            <button type="button" onclick="calculate()">Calculate</button>
+        </form>
+
+        <div id="result">
+            Result: <span id="result-value"></span>
+        </div>
+
+        <form id="feedback-form">
+            <h2>Feedback Form</h2>
+            <label for="comment">Leave a Comment:</label>
+            <textarea id="comment" name="comment"></textarea>
+            <button type="button" onclick="submitComment()">Submit</button>
+        </form>
+
+        <div id="comments">
+            <h2>Comments</h2>
+            <ul id="comments-list"></ul>
+        </div>
+        
+        <!-- <button type="button" onclick="resetComments()">Reset Comments</button> -->
+    </div>
+
+    <script>
+        // Display username from local storage
+        document.addEventListener("DOMContentLoaded", function() {
+            const loggedInUsername = localStorage.getItem("loggedInUsername");
+            document.getElementById("username").textContent = loggedInUsername;
+        });
+
+        function calculate() {
+            const expressionInput = document.getElementById('expression');
+            const resultValue = document.getElementById('result-value');
+
+            const expression = expressionInput.value;
+
+            try {
+                const result = eval(expression);
+                resultValue.textContent = result;
+            } catch (error) {
+                resultValue.textContent = 'Error: ' + error.message;
+            }
+        }
+
+        function performSearch() {
+            const searchQuery = document.getElementById('search-query').value;
+            const searchResultText = document.getElementById('search-result-text');
+
+            fetch(`${SERVER_PROTOCOL}//${SERVER_IP}:3000/search?q=${encodeURIComponent(searchQuery)}`)
+            .then(response => response.text())
+            .then(result => {
+                searchResultText.innerHTML = result;
+                document.getElementById('search-results').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        async function submitComment() {
+            const comment = document.getElementById('comment').value;
+            console.log(comment);
+            try {
+                const response = await fetch(`${SERVER_PROTOCOL}//${SERVER_IP}:3000/comment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: 'Bearer ' + localStorage.getItem('accessToken')
+                    },
+                    body: JSON.stringify({ comment }) // Sending comment as JSON
+                });
+
+                if (response.ok) {
+                    console.log('Comment submitted successfully');
+                    fetchComments();
+                } else {
+                    console.error('Error submitting comment:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+    // Fetch all comments when the page loads
+    fetchComments();
+
+    function logout() {
+        localStorage.removeItem("loggedInUsername");
+        window.location.href = "index.html"; // Redirect to the login page
+    }
+    </script>
+</body>
+</html>

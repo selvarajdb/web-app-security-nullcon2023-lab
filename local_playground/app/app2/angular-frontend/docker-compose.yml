@@ -1,0 +1,11 @@
+version: '3'
+services:
+  my-apache-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "1234:80"
+    container_name: my-apache-container
+    volumes:
+      - ./dist/angular8-springboot-client:/usr/local/apache2/htdocs/

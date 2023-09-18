@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ProPDF</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    header {
+      background-color: #333;
+      color: #fff;
+      padding: 10px;
+    }
+    h1 {
+      margin: 0;
+    }
+    ul.nav-tabs {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center; /* Horizontally align tabs */
+      background-color: #f4f4f4;
+    }
+    ul.nav-tabs li {
+      margin: 0;
+      padding: 0;
+    }
+    ul.nav-tabs li a {
+      display: block;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      color: #333;
+      border-right: 1px solid #ddd;
+      transition: background-color 0.3s;
+    }
+    ul.nav-tabs li:last-child a {
+      border-right: none;
+    }
+    ul.nav-tabs li a:hover {
+      background-color: #ddd;
+    }
+    div.content {
+      margin-top: 20px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      background-color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ProPDF</h1>
+    <ul class="nav-tabs">
+        <li><a href="/" <%= activeTab === 'home' ? 'class="active"' : '' %>>Home</a></li>
+        <li><a href="/convert2image" <%= activeTab === 'convert2image' ? 'class="active"' : '' %>>PDF to Image</a></li>
+        <li><a href="/convert2pdf" <%= activeTab === 'convert2pdf' ? 'class="active"' : '' %>>Image to PDF</a></li>
+    </ul>
+  </header>
+  
+  <div class="content">
+    <!-- Render content based on the active tab -->
+    <% if (activeTab === 'home') { %>
+        <% include home %>
+    <% } else if (activeTab === 'convert2image') { %>
+        <% include convert2image %>
+    <% } else if (activeTab === 'convert2pdf') { %>
+        <% include convert2pdf %>
+    <% } %>
+  </div>
+</body>
+</html>

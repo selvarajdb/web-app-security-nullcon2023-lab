@@ -1,0 +1,10 @@
+<h2>Convert PDF to JPEG</h2>
+<form action="/convert2image" method="post" enctype="multipart/form-data">
+  <input type="file" name="pdf" accept="application/pdf">
+  <button type="submit">Convert</button>
+</form>
+
+<% if (convertedImage) { %>
+    <h3>Converted Image:</h3>
+    <img src="data:image/jpeg;base64, <%= convertedImage %>" alt="Converted Image">
+<% } %>

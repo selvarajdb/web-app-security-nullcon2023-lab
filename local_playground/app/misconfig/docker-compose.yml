@@ -1,0 +1,16 @@
+version: '3'
+services:
+  node-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - misconfigured
+    ports:
+      - "2222:80"
+    container_name: misconfigured
+    image: misconfigured
+
+networks:
+  misconfigured:
+    driver: bridge

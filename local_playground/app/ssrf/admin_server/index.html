@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Page</title>
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Access Restricted to Admins Only</h1>
+  </header>
+  <nav>
+    <ul>
+      <li><a href="#">Home</a></li>
+      <li><a href="#">Dashboard</a></li>
+      <li><a href="#">Settings</a></li>
+    </ul>
+  </nav>
+  <main>
+    <p>This is the admin page content.</p>
+    <!-- This is a vulnerable section -->
+    <?php
+        // Get the page parameter from the URL
+        $page = $_GET['page'];
+        
+        // Include the requested page
+        include($page);
+    ?>
+  </main>
+</body>
+</html>
+

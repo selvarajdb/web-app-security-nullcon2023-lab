@@ -1,0 +1,31 @@
+version: '3'
+services:
+  ruby_server:
+    build:
+      context: ./ruby_server/
+      dockerfile: Dockerfile.ruby
+    container_name: ssrf_ruby
+    image: ssrf/non_admin_server
+    networks:
+      - ssrf_network
+  admin_server:
+    build:
+      context: ./admin_server/
+      dockerfile: Dockerfile.admin
+    container_name: ssrf_admin
+    image: ssrf/admin_server
+    networks:
+      - ssrf_network
+  router:
+    build:
+      context: ./router/
+      dockerfile: Dockerfile.router
+    ports:
+      - "4444:80"
+    container_name: ssrf_router
+    image: ssrf/router
+    networks:
+      - ssrf_network
+networks:
+  ssrf_network:
+    driver: bridge

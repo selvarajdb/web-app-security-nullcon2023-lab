@@ -1,0 +1,29 @@
+FROM node:14
+
+# Install build essentials and other required tools
+RUN apt-get update
+RUN apt-get install -y ghostscript
+
+# Install networking tools (e.g., net-tools and iputils-ping)
+RUN apt-get update && \
+    apt-get install -y net-tools iputils-ping && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy package.json and package-lock.json to the container
+COPY app/package*.json ./
+
+# Install app dependencies
+RUN npm install
+
+# Copy the rest of the app files
+COPY app/ ./
+
+# Expose port 3000
+EXPOSE 3000
+
+# Start the Node.js app
+CMD ["node", "app.js"]
