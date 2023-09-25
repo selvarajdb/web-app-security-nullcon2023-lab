@@ -1,0 +1,17 @@
+version: '3'
+services:
+  spring-boot-app:
+    build:
+      context: .
+      dockerfile: Dockerfile  # Specify the path to your Dockerfile
+    container_name: spring-boot-container
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=production
+    networks:
+      - my-network
+networks:
+  my-network:
+    driver: bridge
+

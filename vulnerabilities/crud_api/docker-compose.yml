@@ -1,0 +1,40 @@
+version: '3'
+services:
+  my-apache-server:
+    build:
+      context: ./angular-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "1234:80"
+    container_name: crud_gui
+    volumes:
+      - ./angular-frontend/dist/angular8-springboot-client:/usr/local/apache2/htdocs/
+    depends_on:
+      - spring-boot-app  # Ensure that spring-boot-app starts first
+
+  spring-boot-app:
+    build:
+      context: ./api-server
+      dockerfile: Dockerfile
+    container_name: spring-boot-container
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres  # Ensure that postgres starts first
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d nullcon_db -h postgres -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:15
+    container_name: my-postgres-container
+    environment:
+      POSTGRES_DB: nullcon_db   # Replace with your desired database name
+      POSTGRES_USER: user     # Replace with your desired username
+      POSTGRES_PASSWORD: password321 # Replace with your desired password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data:/var/lib/postgresql/data  # You can specify a local directory for data persistence
