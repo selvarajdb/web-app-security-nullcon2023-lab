@@ -1,0 +1,78 @@
+/* admin.css */
+
+/* Reset default margin and padding for the whole page */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0; /* Reset default margin */
+}
+
+#header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    background-color: #007bff;
+    color: #fff;
+}
+
+h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+
+.user-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 10px;
+}
+
+.user-item:last-child {
+    border-bottom: none;
+}
+
+.username {
+    flex: 1;
+    margin-right: 10px;
+}
+
+.user-buttons {
+    display: flex;
+    align-items: center;
+}
+
+.comment-list {
+    margin-top: 20px;
+}
+
+.comment-item {
+    margin: 10px 0;
+    padding: 10px;
+    background-color: #f4f4f4;
+    border-radius: 5px;
+}
+
+/* Clearfix to ensure proper alignment */
+.clearfix::after {
+    content: "";
+    display: table;
+    clear: both;
+}

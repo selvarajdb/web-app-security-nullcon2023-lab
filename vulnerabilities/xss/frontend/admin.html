@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="admin.css">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <script>
+        const SERVER_IP = window.location.hostname;
+        const SERVER_PROTOCOL = window.location.protocol;
+    </script>
+    <script src="common.js"></script>
+    <script src="admin.js"></script>
+</head>
+<body>
+    <div id="header">
+        <h1>Admin Dashboard</h1>
+        <div id="logout-button-container">
+            <button id="logout-button" type="button" class="w3-btn w3-teal" onclick="logout()">Logout</button>
+            <button type="button" class="w3-btn w3-black" onclick="resetComments()">Reset All Comments</button>
+        </div>
+    </div>
+    <div class="container user-list clearfix" id="user-list"></div>
+    <div class="container comment-list clearfix" id="user-comments"></div>
+</body>
+</html>

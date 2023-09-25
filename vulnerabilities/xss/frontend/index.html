@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Secure PoC Webpage</title>
+    <script>
+        const SERVER_IP = window.location.hostname;
+        const SERVER_PROTOCOL = window.location.protocol;
+        console.log(`${SERVER_PROTOCOL}//${SERVER_IP}:3000/login`);
+        console.log(SERVER_PROTOCOL);
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        /* Arrange the forms side by side */
+        #forms-container {
+            display: flex;
+            justify-content: center; /* Center horizontally */
+            align-items: flex-start;
+            margin-top: 10vh; /* 10% below the title */
+            gap: 5vh; /* 5% gap between forms */
+        }
+
+        .form {
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            width: 300px;
+        }
+
+        .form h2 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .form label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form input[type="text"],
+        .form input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            margin-bottom: 15px;
+        }
+
+        .form input[type="button"] {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .form input[type="button"]:hover {
+            background-color: #0056b3;
+        }
+
+        #error-message {
+            text-align: center;
+            color: red;
+            margin-top: 15px;
+            margin-bottom: 10px; /* Add margin at the bottom */
+        }
+    </style>
+    <script>
+    async function authenticate() {
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+
+        try {
+            const response = await fetch(`${SERVER_PROTOCOL}//${SERVER_IP}:3000/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+            });
+
+            if (response.ok) {
+            const data = await response.json();
+            const role = data.role;
+            const token = data.token;
+
+            localStorage.setItem("loggedInUsername", username);
+            localStorage.setItem("accessToken", token);
+
+            logServerEvent("Authentication successful for user: " + username);
+            
+            // Redirect based on role
+            if (role === 'admin') {
+                window.location.href = "admin.html"; // Redirect to admin page
+            } else {
+                window.location.href = "home.html"; // Redirect to home page
+            }
+            } else if (response.status === 404) {
+            displayErrorMessage("Authentication failed! User not found.");
+            } else if (response.status === 401) {
+            displayErrorMessage("Authentication failed! Invalid username or password.");
+            } else {
+            displayErrorMessage("Authentication failed! An error occurred.");
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            displayErrorMessage("Authentication failed! An error occurred.");
+        }
+        }
+
+        function logServerEvent(eventMessage) {
+            // Send the event message to the server for logging
+            // You can use AJAX or any other method to communicate with the server here
+            console.log("Server Log: " + eventMessage);
+
+            // Send the event message to the server using a fetch request
+            fetch('/log', {
+                method: 'POST',
+                body: JSON.stringify({ event: eventMessage }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
+
+        function displayErrorMessage(message) {
+            var errorDiv = document.getElementById("error-message");
+            errorDiv.textContent = message;
+        }
+
+        function register() {
+            const regUsername = document.getElementById("reg-username").value;
+            const regPassword = document.getElementById("reg-password").value;
+            const regRole = document.getElementById("reg-role").value;
+            const errorDiv = document.getElementById("error-message");
+
+            //Client-side validation
+            if (regUsername === "admin" && regRole === "user") {
+                displayErrorMessage("Registration not allowed for this user.");
+                return;
+            }
+
+            fetch(`${SERVER_PROTOCOL}//${SERVER_IP}:3000/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: regUsername, password: regPassword, role: regRole })
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log(result);
+                if (result.message) {
+                console.log('Registration successful:', result.message);
+                errorDiv.style.color = "green"; // Set color to green for success
+                errorDiv.textContent = "Registration successful!";
+                } else if (result.error === 'Username already exists') {
+                console.error('Error registering:', result.error);
+                errorDiv.style.color = "red"; // Set color to red for error
+                errorDiv.textContent = "Registration failed! Username already exists.";
+                } else {
+                console.error('Error registering:', result.error);
+                errorDiv.style.color = "red"; // Set color to red for error
+                errorDiv.textContent = "Registration failed! An error occurred.";
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                errorDiv.style.color = "red"; // Set color to red for error
+                errorDiv.textContent = "An error occurred during registration.";
+            });
+            }
+    </script>
+</head>
+<body>
+    <h1>Welcome to the Secure PoC Playground</h1>
+
+    <div id="forms-container">
+        <div class="form" id="login-form">
+            <h2>Login</h2>
+            <form>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+                <input type="hidden" id="reg-role" name="reg-role" value="user">
+                <input type="button" value="Login" onclick="authenticate()">
+            </form>
+        </div>
+
+        <div class="form" id="registration-form">
+            <h2>Register</h2>
+            <form>
+                <label for="reg-username">Username:</label>
+                <input type="text" id="reg-username" name="reg-username" required>
+                <label for="reg-password">Password:</label>
+                <input type="password" id="reg-password" name="reg-password" required>
+                <input type="button" value="Register" onclick="register()">
+            </form>
+        </div>
+    </div>
+
+    <div id="error-message"></div>
+</body>
+</html>
