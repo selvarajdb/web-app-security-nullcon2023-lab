@@ -1,0 +1,17 @@
+# docker run -u zap -p 8888:8080 -p 8090:8090 -i ghcr.io/zaproxy/zaproxy:stable zap-webswing.sh
+# http://127.0.0.1:8888/zap/
+# To proxy localhost (and related addresses) with newer Firefox versions (>= 67) the preference network.proxy.allow_hijacking_localhost (accessible through the about:config page) must be set to true.
+
+
+version: '3'
+services:
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    user: "zap"
+    ports:
+      - "8888:8080"
+      - "8090:8090"
+    command: zap-webswing.sh
+    # Enable for accessing SSL sites
+    volumes:
+      - ./wrk:/zap/wrk/:rw 
